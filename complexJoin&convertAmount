@@ -1,0 +1,37 @@
+USE databaseName
+DECLARE	 @Fund int = 6071,
+		 @entryDate date = '2021-08-31',
+		 @endDay date= '2021-08-31',
+ 		 @year as int,
+		 @month smallint
+
+IF(MONTH(@endDay)= 12) 
+		SET @month =1 
+	ELSE 
+		SET @month = MONTH(@endDay)+1
+
+		IF(MONTH(@endDay)= 12) 
+		SET @year = YEAR(@endDay)
+	ELSE 
+		SET @year = YEAR(@endDay)-1
+
+SELECT t1.col1 as 'Accounting Entity'
+	  ,FORMAT(SUM(CASE WHEN t2.col2 = 4315 THEN t2.amount END),'C', 'de-DE') as 'Cash'
+	  ,FORMAT(SUM(CASE WHEN t2.col2 BETWEEN 2101 AND 2059 THEN t2.amount END),'C', 'de-DE') as 'ShareCapital'
+	  ,FORMAT(SUM(CASE WHEN t2.col2 < 1999 THEN t2.amount END),'C', 'de-DE') as 'Assets'
+	  ,FORMAT(SUM(CASE WHEN t2.col2 >2999 THEN t2.amount END),'C', 'de-DE') as 'Liabilities'
+	  ,CONCAT(@year, '-', FORMAT(@month, '00'), '-01 - ', @endDay) as 'Entry date'
+	  ,@entryDate as 'entry date'
+  FROM table1 t1 
+	RIGHT JOIN table2 t2 ON t1.col2 = t2.col1 
+	RIGHT JOIN table3 t3 ON t3.col1 = t2.col2
+WHERE (
+		t1.col1 IS NOT NULL
+		AND t2.VALIDFROM > CONCAT(@year, '-', FORMAT(@month, '00'), '-01' )
+		AND t2.VALIDTO < @endDay
+		AND t2.VALIDFROM <= @entryDate
+		AND t2.VALIDTO >= @entryDate	
+		AND t1.col2 = @Fund
+		)
+ GROUP BY  t1.col1
+ ORDER BY  t1.col1 ASC
