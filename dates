@@ -1,0 +1,7 @@
+SELECT CONVERT(date, GETDATE())
+SELECT CONVERT(date, GETDATE()+DAY(0))
+SELECT day(CONVERT(date, GETDATE()+DAY(0)))
+SELECT month(CONVERT(date, GETDATE()+DAY(0)))
+SELECT year(CONVERT(date, GETDATE()+DAY(0)))
+select convert(int, GETDATE()-(GETDATE()+month(1)))
+select GETDATE()+day(1)
