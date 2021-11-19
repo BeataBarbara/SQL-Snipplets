@@ -1,0 +1,60 @@
+USE [testBeata]
+GO
+/****** Object:  Trigger [dbo].[split_booking]    Script Date: 08/10/2021 12:14:03 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TRIGGER [dbo].[split_booking] --trigger name
+ON [dbo].[KP12_TOWAR_Testowy] INSTEAD OF INSERT --database name. If we insert new data into this DB, trigger runs
+AS
+BEGIN
+	SET NOCOUNT ON
+	DECLARE @TAX_RATE as TINYINT	
+	INSERT INTO [testBeata].[dbo].[KP1_SPLIT_BOOKING] ( --trigger causes changes in this DB
+		s_productName, 		 --1
+		s_taxCategory, 		 --2
+		s_amount,			 --3
+		s_accountNumber,	 --4
+		s_side,				 --5
+		s_bookingDate)		 --6
+	SELECT 
+		I.t_NazwaTowaru,	 --1
+		I.t_KategoriaTowaru, --2
+		I.t_CenaTowaru,		 --3
+		1234,				 --4
+		'S',				 --5
+		GETDATE()			 --6
+
+	INSERT INTO [testBeata].[dbo].[KP1_SPLIT_BOOKING] (
+		s_productName, 		 --1
+		s_taxCategory, 		 --2
+		s_amount,			 --3
+		s_accountNumber,	 --4
+		s_side,				 --5
+		s_bookingDate)		 --6
+	SELECT 
+		I.t_NazwaTowaru,	 --1
+		I.t_KategoriaTowaru, --2
+		I.t_CenaTowaru,		 --3
+		5678,				 --4
+		'S',				 --5
+		GETDATE(),			 --6
+		'I'
+	FROM INSERTED AS I
+
+	DECLARE @category as TINYINT
+	SET @category = (SELECT TOP 1 [t_KategoriaTowaru] FROM [testBeata].[dbo].[KP12_TOWAR_Testowy] ORDER BY [t_ID] DESC)
+
+	SET @TAX_RATE =
+					(CASE
+						WHEN @category = 2 THEN 100
+						WHEN @category = 3 THEN 108
+						WHEN @category = 4 THEN 118
+					END)
+		UPDATE [testBeata].[dbo].[KR23_LOG_TOWAR_Testowy]
+			SET ltt_CenaTowaru = ROUND(ltt_CenaTowaru/@TAX_RATE,4)*100 WHERE ltt_ID=(SELECT MAX(ltt_ID) FROM [testBeata].[dbo].[KR23_LOG_TOWAR_Testowy])
+
+		SELECT 'Booking has been splitted' AS [Confirmation]
+
+END
